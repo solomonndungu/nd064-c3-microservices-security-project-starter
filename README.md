@@ -17,3 +17,44 @@ No stress, you have tools and security incident response knowledge to respond ;)
 ### Project Instructions
 
 Follow the steps/instructions in the Udacity classroom to complete and submit the project.
+
+# Pushing code to Github
+- In the command line, navigate to the root directory of your project.
+- Initialize the local directory as a Git repository.
+
+git init -b main
+
+- Add the files in your new local repository. This stages them for the first commit.
+
+git add .
+
+- You can checkout to the branch that you want your files to be pushed to
+
+git checkout master
+
+- Commit the files that you've staged in your local repository.
+
+git commit -m "First commit"
+
+- In Terminal, add the URL for the remote repository where your local repository will be pushed.
+
+git remote add origin/master <REMOTE_URL>
+
+- To set up/change access token so that your terminal may connect to the new repository, follow 
+    instructions on this link: 
+
+https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+
+- Push the changes in your local repository to GitHub.com
+
+git push -u origin master
+
+
+# To run the vuln_app:
+Run the Flask program by using:
+
+docker-compose up
+
+The application should be running on port 8000. You can access it by querying:
+
+http://localhost:8080
