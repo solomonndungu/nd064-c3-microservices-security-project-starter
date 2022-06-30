@@ -1,8 +1,29 @@
 Docker Threat Modeling
 Given Docker's system components and the STRIDE framework, identify five potential threats that may arise.
 
+1. Docker Client: Information Disclosure. The docker client may expose sensitive infromation such as secrets that
+are hardcoded in configuration files, or part of the dockerfile itself.
+
+2. Docker Client: Denial of Service. Is where excessive traffic from the client could overwhelm the daemon, which
+is often on the same machine and cause it to crash, leading to a client compromise.
+
+3. Docker Host: Spoofing. Can occur when a sidecar container has intentional access to the primary container's
+namespace and may spoof the namespace used by the primary container, resulting in isolation tampering.
+
+4. Docker Registry: Tampering. Leads to supply chain injections. An attacker may implant malicious image into the
+image registry and entice organizations to use it. Alternatively, an attacker may introduce open source libraries
+in popular hosted repositories and encourage organizations to use them.
+
+5. Docker Registry: Elevation of Privilege. Container image permissions may be elevated using the --privilege flag.
+
+
 Kubernetes Threat Modeling
 Given Kubernetes' system components and the STRIDE framework, identify five potential threats that may arise.
 
+
+
+
 Docker-bench Run Results and Analysis
-From the failed findings, select and document 3 findings from the Docker-bench results that you want to harden based on the 5 attack surface areas you identified in Step 1. At least 1 of the 3 hardened findings should be different from the ones mentioned in the exercise (i.e. 5.10, 5.14, and 5.22).
+From the failed findings, select and document 3 findings from the Docker-bench results that you want to harden based
+on the 5 attack surface areas you identified in Step 1. At least 1 of the 3 hardened findings should be different from
+the ones mentioned in the exercise (i.e. 5.10, 5.14, and 5.22).
