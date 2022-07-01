@@ -20,7 +20,17 @@ in popular hosted repositories and encourage organizations to use them.
 Kubernetes Threat Modeling
 Given Kubernetes' system components and the STRIDE framework, identify five potential threats that may arise.
 
+1. Kubernetes Control Plane: Tampering. Configuration of etcd may be tampered with, modifying vital system-level
+configurations such as pod specs.
 
+2. Kubernetes Control Plane: Information Disclosure. Sensitive information may be disclosed via the etcd key value store.
+
+3. Kubernetes Control Plane: Denial of Service. Excessive traffic to the kube-apiserver can overwhelm this endpoint.
+
+4. Kubernetes Node Runtime: Repudiation. Unauthorized changes can be made to kubelet.
+
+5. Kubernetes Cloud Controller Manager: Focus on reducing the attack surface by using narrowy scoped service accounts for
+authentication to the kube-apiserver using IAM rules within each cloud provider's control plane.
 
 
 Docker-bench Run Results and Analysis
