@@ -4,6 +4,10 @@
 registries. These signatures allow client-side verification of the identity and the publisher of specific image
 tags and ensures the provenance of container images.
 
+- To enable content trust in a bash shell, you should enter:
+
+export DOCKER_CONTENT_TRUST=1
+
 - You should execute the following command:
 
 echo $DOCKER_CONTENT_TRUST
@@ -11,13 +15,9 @@ echo $DOCKER_CONTENT_TRUST
 - This should return a value of 1.
 
 
-5.23 Ensure that docker exec commands are not used with the user=root option (Manual)
+2.8 Enable user namespace support (Automated)
 
-- If you have auditing enabled as recommended in Section 1, you can use the command below to filter out docker exec
-commands that use the --user=root option.
-
-ausearch -k docker | grep exec | grep user
-
+- 
 
 
 5.25 Ensure that the container is restricted from acquiring additional privileges (Automated)
