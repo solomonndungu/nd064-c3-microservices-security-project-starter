@@ -15,18 +15,39 @@ echo $DOCKER_CONTENT_TRUST
 - This should return a value of 1.
 
 
-2.8 Enable user namespace support (Automated)
+3.16 Ensure that the Docker socket file permissions are set to 660 or more restrictively (Automated)
 
-- 
+- You should execute the command:
+
+chmod 660 /var/run/docker.sock
+
+- This sets the file permissions of the Docker socket file to 660.
+
+- You should execute the command below to verify that the Docker socket file has permissions of 660 or more
+restrictive permissions.
+
+stat -c %a /var/run/docker.sock
 
 
-5.25 Ensure that the container is restricted from acquiring additional privileges (Automated)
+5.14 Ensure that the 'on-failure' container restart policy is set to '5' (Automated)
 
-- The no_new_priv bit is in the kernel. It ensures that the process and its child processes do not gain any additional
-privileges via suid or sgid bits. This reduces the danger associated with many operations because the possibility of
-subverting privileged binaries is lessened.
+- If you wish a container to be automatically restarted, a sample commandis a below:
 
-- You should run the following command:
+docker run --detach --restart=on-failure:5 nginx
 
-docker ps --quiet --all | xargs docker inspect --format '{{ .Id }}:
-SecurityOpt={{ .HostConfig.SecurityOpt }}'
+- If this option is set, a container will only attempt to restart itself 5 times.
+
+- You should use the command below:
+
+ docker ps --quiet --all | xargs docker inspect --format '{{ .Id }}: RestartPolicyName=
+ {{ .HostConfig.RestartPolicy.Name }} MaximumRetryCount={{ .HostConfig.RestartPolicy.MaximumRetryCount
+  }}'
+
+- If this command returns RestartPolicyName=always, then the system is not configured optimally.
+
+- If the above command returns RestartPolicyName=no or just RestartPolicyName=, then restart policies
+are not being used and the container would never be restarted automatically. Whilst this may be a secure
+option, it is not the best option from a usability standpoint.
+
+- If the above command returns RestartPolicyName=on-failure, then verify that the number of restart attempts
+is set to 5 or less by looking at MaximumRetryCount.
