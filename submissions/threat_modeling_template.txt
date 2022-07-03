@@ -1,0 +1,32 @@
+4.5 Ensure Content trust for Docker is Enabled (Automated)
+
+- Content trust provides the ability to use digital signatures for data sent to and received from remote Docker
+registries. These signatures allow client-side verification of the identity and the publisher of specific image
+tags and ensures the provenance of container images.
+
+- You should execute the following command:
+
+echo $DOCKER_CONTENT_TRUST
+
+- This should return a value of 1.
+
+
+5.23 Ensure that docker exec commands are not used with the user=root option (Manual)
+
+- If you have auditing enabled as recommended in Section 1, you can use the command below to filter out docker exec
+commands that use the --user=root option.
+
+ausearch -k docker | grep exec | grep user
+
+
+
+5.25 Ensure that the container is restricted from acquiring additional privileges (Automated)
+
+- The no_new_priv bit is in the kernel. It ensures that the process and its child processes do not gain any additional
+privileges via suid or sgid bits. This reduces the danger associated with many operations because the possibility of
+subverting privileged binaries is lessened.
+
+- You should run the following command:
+
+docker ps --quiet --all | xargs docker inspect --format '{{ .Id }}:
+SecurityOpt={{ .HostConfig.SecurityOpt }}'

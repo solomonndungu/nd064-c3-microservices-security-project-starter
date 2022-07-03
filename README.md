@@ -103,3 +103,7 @@ Docker-bench to a file makes it easier to review the result afterward.
 
 cat docker-bench.txt | grep FAIL
 
+6. Check all failed findings.
+
+- Using the CIS_Docker_Benchmark_v1.2.0.pdf from the docs folder in starter, review the findings
+from running the docker-bench.
