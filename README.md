@@ -81,7 +81,7 @@ docker images | grep opensuse
 
 docker build . -t opensuse/leap:latest -m 256mb --no-cache=true
 
-4.Go a step back from starter folder to nd064-c3-microservices-security-project-starter.
+4. Go a step back from starter folder to nd064-c3-microservices-security-project-starter.
 
 - Clone the Docker-bench repository from GitHub:
 
@@ -94,4 +94,12 @@ it to check our docker environment.
 
 go build -o docker-bench
 
-- Run docker bench
+- Run docker bench against our Docker environment and output the test to a file. Running 
+Docker-bench to a file makes it easier to review the result afterward.
+
+./docker-bench --include-test-output >docker-bench.txt
+
+5. Concatenate the docker-bench.txt file and look for the lines where there is a failure:
+
+cat docker-bench.txt | grep FAIL
+
