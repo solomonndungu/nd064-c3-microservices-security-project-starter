@@ -33,7 +33,7 @@ stat -c %a /var/run/docker.sock
 
 - If you wish a container to be automatically restarted, a sample commandis a below:
 
-docker run --detach --restart=on-failure:5 nginx
+docker run --detach --restart=on-failure:5 opensuse/leap
 
 - If this option is set, a container will only attempt to restart itself 5 times.
 
