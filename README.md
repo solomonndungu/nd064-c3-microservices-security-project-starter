@@ -58,3 +58,40 @@ docker-compose up
 The application should be running on port 8000. You can access it by querying:
 
 http://localhost:8080
+
+
+# Evaluating Docker with CIS Benchmark and Docker-bench
+1. Make sure that GO runtime is properly installed.
+
+brew install go
+
+- Check the GO installation with:
+
+go env
+
+2. Pull in the latest Docker OpenSUSE leap image:
+
+docker pull opensuse/leap:latest
+
+- Check and make sure that you have the Docker image locally:
+
+docker images | grep opensuse
+
+3. We will build the OpenSUSE image with a memory amount set to 256 mbs with no-cache option:
+
+docker build . -t opensuse/leap:latest -m 256mb --no-cache=true
+
+4.Go a step back from starter folder to nd064-c3-microservices-security-project-starter.
+
+- Clone the Docker-bench repository from GitHub:
+
+git clone git@github.com:aquasecurity/docker-bench.git
+
+- Navigate to docker-bench folder. We need to go ahead and build an application in order to run
+it to check our docker environment.
+
+- Compile this GO application using make and build docker-bench:
+
+go build -o docker-bench
+
+- Run docker bench
