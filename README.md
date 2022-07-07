@@ -161,3 +161,30 @@ rke up
 now check the health of the Kubernetes cluster from your local host using the `kube_config_cluster.yml` file:
 
 kubectl --kubeconfig kube_config_cluster.yml get nodes
+
+
+# Run Kube-bench on Master node using hardened profile
+
+- SSH into node1 via `root@192.168.56.101`. The password is `vagrant`.
+
+- Run `zypper in docker` to ensure the latest docker is installed.
+
+- Execute the docker container on the cluster nodes:
+
+docker run --pid=host -v /etc:/node/etc:ro -v /var:/node/var:ro -ti
+rancher/security-scan:v0.2.2 bash
+
+- `rancher/security-scan:v0.2.2 bash` is a docker container that we will start up. This will then run a security scan
+against this cluster and give us the results. Once you run this command, the context changes (you will be within the
+container context), and you can see the container id.
+
+- Within the container context, run Kube-bench scan against node1 all components using the `rke-cis-1.6-hardened`
+benchmark profile via:
+
+kube-bench run --targets etcd,master,controlplane,policies --scored --
+config-dir=/etc/kube-bench/cfg --benchmark rke-cis-1.6-hardened
+
+- Filter for failures only and investigate the failures closely:
+
+kube-bench run --targets etcd,master,controlplane,policies --scored --
+config-dir=/etc/kube-bench/cfg --benchmark rke-cis-1.6-hardened | grep FAIL
