@@ -107,3 +107,57 @@ cat docker-bench.txt | grep FAIL
 
 - Using the CIS_Docker_Benchmark_v1.2.0.pdf from the docs folder in starter, review the findings
 from running the docker-bench.
+
+
+# Setting up and bringing up the RKE Cluster
+1. Install the RKE binary via this link:
+
+https://rancher.com/docs/rke/latest/en/installation/
+
+2. Navigate to folder where the vagrantfile is.
+
+- Change ip in vagrantfile from 192.168.50 to 192.168.56 for it to run on your machine.
+
+- Also locate the cluster.yml file and change the ip configurations to 56 to set up rke.
+
+3. Run vagrantfile.
+
+vagrant up
+
+4. Check SSH key pair.
+
+- Verify if ~/.ssh/id_rsa and ~/.ssh/id_rsa.pub files exist by running cat ~/.ssh/id_rsa and
+cat ~/.ssh/id_rsa.pub.
+
+- If these are not available, create a new SSH key pair using the following command and press ENTER for each prompt:
+
+ssh-keygen -t rsa -b 2048
+
+- This adds a new key pair to your ~/.ssh/id_rsa and ~/.ssh/id_rsa.pub file or create a new file if it doesn't exist.
+
+- Copy the SSH key for each Vagrant box. This allows root access to the boxes without you having to type the password
+every time. These keys allow RKE to be deployed to the nodes when you run `rke up`.
+
+sudo ssh-copy-id -i ~/.ssh/id_rsa root@192.168.56.101
+sudo ssh-copy-id -i ~/.ssh/id_rsa root@192.168.56.102
+
+- Agree to the prompts. The first password is your sudo machine password. The second password is for the key - vagrant.
+Provide them when prompted.
+
+5. Make sure you can access each node via:
+
+ssh root@192.168.56.101
+ssh root@192.168.50.102
+
+6. Create and RKE Cluster
+
+- Run:
+
+rke up
+
+7. Check RKE Cluster health
+
+- Once the installation is complete, a new `kube_config_cluster.yml` will be created in your directory. You can
+now check the health of the Kubernetes cluster from your local host using the `kube_config_cluster.yml` file:
+
+kubectl --kubeconfig kube_config_cluster.yml get nodes
