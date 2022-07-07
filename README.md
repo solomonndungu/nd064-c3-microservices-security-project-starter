@@ -188,3 +188,24 @@ config-dir=/etc/kube-bench/cfg --benchmark rke-cis-1.6-hardened
 
 kube-bench run --targets etcd,master,controlplane,policies --scored --
 config-dir=/etc/kube-bench/cfg --benchmark rke-cis-1.6-hardened | grep FAIL
+
+
+# Run Kube-bench on Worker Node using Permissive and Hardened Profile
+
+- Bring up the worker node2 via `ssh root@192.168.56.102`. The password is `vagrant`.
+
+- Start up the `rancher/security-scan:v0.2.2` container via:
+
+docker run --pid=host -v /etc:/node/etc:ro -v /var:/node/var:ro -ti
+rancher/security-scan:v0.2.2 bash
+
+- Within the container context, run the Kube-bench scan against node2 all components using the
+`rke-cis-1.6-permissive` benchmark profile via:
+
+kube-bench run --targets node --scored --config-dir=/etc/kube-bench/cfg --
+benchmark rke-cis-1.6-permissive
+
+- Now try the `rke-cis-1.6-hardened` benchmark profile via:
+
+kube-bench run --targets node --scored --config-dir=/etc/kube-bench/cfg --
+benchmark rke-cis-1.6-hardened
