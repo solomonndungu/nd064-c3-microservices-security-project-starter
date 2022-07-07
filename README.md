@@ -209,3 +209,39 @@ benchmark rke-cis-1.6-permissive
 
 kube-bench run --targets node --scored --config-dir=/etc/kube-bench/cfg --
 benchmark rke-cis-1.6-hardened
+
+- Follow this documentation on how to harden Rancher RKE via Baseline Hardening:
+
+https://rancher.com/docs/rancher/v2.x/en/security/rancher-2.5/1.6-hardening-2.5/#configure-etcd-user-and-group
+
+- Update your current cluster.yml with hardening steps per Rancher's reference hardened cluster.yml in this site:
+
+https://rancher.com/docs/rancher/v2.5/en/security/rancher-2.5/1.6-hardening-2.5/#reference-hardened-rke-cluster-yml-configuration
+
+- This is a must-do because the out-of-the-box cluster.yml does not contain hardening configurations.
+
+- Do NOT update these fields in the cluster.yml:
+
+nodes:
+any IP addresses
+plugin: calico
+any tolerations
+authentication: strategy
+images
+mode:rbac
+kubernetes_version:
+cluster_name:
+
+- Save the hardened cluster.yml locally and rerun `rke up` to re-provision with the hardened settings.
+
+- Rerun the container:
+
+docker run --pid=host -v /etc/passwd:/etc/passwd -v /etc/group:/etc/group
+-v /etc:/node/etc:ro -v /var:/node/var:ro -ti rancher/security-scan:v0.2.2
+bash
+
+- Rerun the scan for etcd only:
+
+kube-bench run --targets etcd --scored --config-dir=/etc/kube-bench/cfg --benchmark rke-cis-1.6-hardened | grep FAIL
+
+- No checks for etcd should fail.
