@@ -1,0 +1,15 @@
+1. Closely review Kube-bench findings and threat model any implications.
+ - Use the Rancher Benchmark Assessment PDF and think back to your threat model to reason through the finding.
+ - Pay special attention to how the risk can be realized versus just trying to address findings.
+
+2. Create a plan on how to test the change. Really think through the implications of the change.
+ - Often this needs to be closely coordinated with other teams and tested in a non-production environment.
+
+3. Test the hardening on a non-production or staging cluster.
+ - Create a non-production cluster representative of your production. Sometimes problems due to hardening steps
+ do not materialize unless there is a load on the system or traffic.
+ - One technique is canary testing, where we split some production traffic to the staging environment and test
+ there.
+ - While testing in the non-production or staging cluster, we should also closely monitor metrics for regressions,
+ i.e. undesired changes or consequences from hardening.
+ - Closely monitor metrics to ensure no regressions.
