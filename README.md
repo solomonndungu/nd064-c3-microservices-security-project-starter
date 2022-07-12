@@ -245,3 +245,53 @@ bash
 kube-bench run --targets etcd --scored --config-dir=/etc/kube-bench/cfg --benchmark rke-cis-1.6-hardened | grep FAIL
 
 - No checks for etcd should fail.
+
+# Image layer Analysis
+
+- To install syft on macOS:
+
+brew install syft
+
+- Then we use syft to examine the latest OpenSUSE leap image.
+
+syft opensuse/leap:latest --scope all-layers
+
+- We can also run this command to examine the Docker notary server image:
+
+syft notary_server:latest --scope all-layers
+
+- We need to define which repo to use when installing grype:
+
+brew tap anchore/grype
+
+brew install grype
+
+- We then run frype to evaluate the latest OpenSUSE leap image:
+
+grype opensuse/leap:latest --scope all-layers
+
+- Grype can return 0 vulnerabilities. Now let's use the second tool trivy. We define trivy repo and install:
+
+brew tap aquasecurity/trivy
+
+brew install trivy
+
+- Next, we will run trivy against the latest OpenSUSE leap image:
+
+trivy image opensuse/leap:latest
+
+- Let's view Docker file with `vim Dockerfile` to try and fix the vulnerabilities.
+
+- Under `refresh zypper and install updates`, we can see that the `run zypper refresh` command does not actually
+install updates. Zypper is the package manager for SUSE. So you need to also run the `zypper up` command, which
+updates the OpenSUSE base image. The `-y` is to agree to the update for the non-interactive run:
+
+RUN zypper ref && zypper up -y
+
+- Now let's build this Dockerfile again with the updates implied:
+
+docker build . -t opensuse/leap:latest -m 256mb --no-cache=true
+
+- We will rerun trivy and see if it still identifies the vulnerabilities:
+
+trivy image opensuse/leap:latest
