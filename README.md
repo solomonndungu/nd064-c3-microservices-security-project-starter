@@ -461,3 +461,87 @@ These monitor the default Kubernetes services.
 port forwarding:
 
 lsof -ti:9090 | xargs kill -9
+
+- Here, we will deploy falco-exporter. Run the following Helm install command to install
+falco-exporter:
+
+helm install --kubeconfig kube_config_cluster.yml falco-exporter \
+  --set serviceMonitor.enabled=true \
+  falcosecurity/falco-exporter
+
+- With `--set serviceMonitor.enabled=true`, we are setting a special swotch to install a
+service monitor, which is a configuration that Prometheus uses to discover falco-exporter,
+then scrape metrics from it and import them into Prometheus.
+
+- Run this command to get the name of the release or the pod name.
+
+kubectl --kubeconfig kube_config_cluster.yml get pods --namespace default -l "app.kubernetes.io/name=falco-exporter,app.kubernetes.io/instance=falco-exporter" -o jsonpath="{.items[0].metadata.name}"
+falco-exporter-f4z44
+"Visit http://127.0.0.1:9376/metrics to use your application"
+
+- Port forward the pod name above to port 9376:
+
+kubectl --kubeconfig kube_config_cluster.yml port-forward --namespace default falco-exporter-f4z44 9376
+
+- You should now be able to visit `127.0.0.1:9376/metrics` from a web browser locally and see
+Falco event logs.
+
+- Here, we create and apply a custom `ServiceMonitor` file in order for Prometheus to scrape
+logs from falco-exporter. Create a file:
+
+touch falco_service_monitor.yaml
+
+- Open this yaml file and add the following content. Be extra careful to make sure the spacing
+is correct.
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    release: prometheus-operator-1619828194
+  name: falco-exporter-servicemonitor
+  namespace: default
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+  - port: metrics 
+    interval: 5s
+  namespaceSelector:
+    matchNames:
+    - default
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: falco-exporter
+      app.kubernetes.io/name: falco-exporter
+
+- Looking at this file, you will notice that we are using a Monitoring Core OS API. This file tells
+Prometheus to apply the `ServiceMonitor` kind and look for the `falco-exporter` name.
+
+- Lastly, we need to visit `127.0.0.1:9376/metrics` from the web browser and check the Prometheus
+pane. Under targets, we need to make sure that the falco-exporter ServiceMonitor has been discovered.
+You should see 1 active target under "Service Discovery" for `default/falco-exporter-servicemonitor`
+listed underneath.
+
+- Here, we will set up the Falco Grafana panel. Run the following command to check the name of
+the Grafana pod:
+
+kubectl --kubeconfig kube_config_cluster.yml get pod
+
+- Next, we will port forward the Grafana pod on port 3000, which is the port that Grafana uses.
+
+kubectl --kubeconfig kube_config_cluster.yml --namespace default port-forward prometheus-operator-1619828194-grafana-79668b6
+
+- You should have port forwarding started.
+
+- Browse `http://127.0.0.1:3000/` from your web browser and login using:
+
+Username: admin
+Password: prom-operator
+
+- From Grafana, click on the `+` icon on the left-hand-side panel, select "import". We will import
+the Falco dashboard from the Falco Dashboard page. Copy the panel ID `11914` from this page, apply
+it to the Grafana Import page and name it `Falco Dashboard Udacity`. Select the Prometheus data
+source, which should be automatically discovered.
+
+- Ensure Falco metrics are being generated in the Grafana panel. On the top-right corner, select
+"Last 5 minutes" and refresh. You should be able to see events from Falco.
