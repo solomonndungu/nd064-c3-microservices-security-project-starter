@@ -295,3 +295,169 @@ docker build . -t opensuse/leap:latest -m 256mb --no-cache=true
 - We will rerun trivy and see if it still identifies the vulnerabilities:
 
 trivy image opensuse/leap:latest
+
+# Implement Sysdig Falco for Runtime Monitoring
+- Reboot the RKE cluster node once the Falco driver installation is complete.
+
+- We first need to install Helm. First we `curl` this URL to download the `get_helm` script:
+
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+
+- Change the permissions in order to execute the script we downloaded:
+
+chmod 700 get_helm.sh
+
+- Run the script to install helm:
+
+./get_helm.sh
+
+- Check helm version via `helm version`.
+
+- Add falcosecurity repo using a helm chart in order to stage it locally:
+
+helm repo add falcosecurity https://falcosecurity.github.io/charts
+
+- We then need to install special Falco drivers and kernel headers before installing Falco itself.
+
+- SSH into `node1` and install the driver. Password is `vagrant`.
+
+ssh root@192.168.56.101
+
+- Download the `falcosecurity-3672BA8F.asc` file, which is a checksum for the drivers. Trust the
+falcosecurity GPG (GNU Privacy Guard) key:
+
+rpm --import https://falco.org/repo/falcosecurity-3672BA8F.asc
+
+- Curl and configure the zypper repository that contains the drivers:
+
+curl -s -o /etc/zypp/repos.d/falcosecurity.repo https://falco.org/repo/falcosecurity-rpm.repo
+
+- Install the kernel headers. This is a key step, where we will apply the SUSE-specific kernel headers prepared
+by the Falco team in order to intercept syscalls on the SUSE operating system.
+
+zypper -n install kernel-default-devel
+
+- Reboot `node1` once the installation is complete.
+
+- Update the helm repo to get the latest charts:
+
+helm repo update
+
+- Install Falco using the provided Helm chart:
+
+helm install --kubeconfig kube-config-cluster.yml falco falcosecurity/falco \
+  --set falco.grpc.enabled=true \
+  --set falco.grpcOutput.enabled=true \
+
+- The above 2 Falco commands ensure that Falco outputs logs using the gPRC protocol. This will then
+allow the falco-exporter to collect those logs, stage them, and later be scrapped by Prometheus.
+
+- Run `kubectl --kubeconfig kube_config_cluster.yml get pod` to check Falco pod health. If the pod is
+still being created, the status of the Falco pod will say `ContainerCreating`. After a minute or two,
+the Falco pod status should change to `Running`.
+
+- Run `kubectl --kubeconfig kube_config_cluster.yml get ds` to make sure that Falco is deployed as a
+DaemonSet. You should see a Falco DaemonSet, a falco-exporter DaemonSet, and a DaemonSet for the
+Prometheus node exporter.
+
+- Run the following command to make sure that the Falco service account has been created. The service
+account is necessary for Falco to operate.
+
+kubectl --kubeconfig kube_config_cluster.yml get ds falco -o yaml | grep serviceAcc
+
+- The following output, which confirms a service account of `falco` have been created:
+
+f:serviceAccount: {}
+f:serviceAccountName: {}
+serviceAccount: falco
+serviceAccountName: falco
+
+- Now that we have Falco running, we will intentionally create some test security events to see if Falco
+is generating alerts properly. Fetch the Falco pod name via:
+
+kubectl --kubeconfig kube_config_cluster.yml get pods
+
+- Next, we will create a security event on the container by spawning a shell into the Falco pod and running
+some legit commands in it, as an attacker might. Then we will check the Falco logs to see if Falco registers
+those commands as security events. Make sure to replace `falco-vwsd4` with your actual pod name.
+
+kubectl --kubeconfig kube_config_cluster.yml exec -it falco-vwsd4 -- /bin/bash
+
+- After running this command, the context changes from our local machine to within the container. We are now
+root on the `falco-vwsd4` container.
+
+- From `node1` run a few fun commands. An attacker may want to create an account for themselves to maintain
+persistence on the container. e.g.
+
+adduser best_hacker
+
+- Now our "best hacker" may be interested in taking a look at the password hashes for other users on the
+container. To do that, they might look at the `/etc/shadow` password directory. So we will `cat` the
+`etc/shadow` file and send it out to `/dev/null` because we don't actually want to expose the content
+of it on screen, as it is sensitive information.
+
+cat /etc/shadow > /dev/null
+
+- Exit the container and check logs for the Falco container ID to check the logs:
+
+kubectl --kubeconfig kube_config_cluster.yml logs -f falco-vwsd4 | grep adduser 
+kubectl --kubeconfig kube_config_cluster.yml logs -f falco-vwsd4 | grep /etc/shadow
+kubectl --kubeconfig kube_config_cluster.yml logs -f falco-vwsd4 | grep nc
+
+- You should see warning messages regarding the corresponding Falco security events in the logs for
+each of the commands.
+
+- In the following steps, we can check to see if the Falco configuration has been deployed with the gRPC
+output set to true. This is required for us to forward logs from Falco to Grafana.
+
+- Check the name of the pod that's running:
+
+kubectl --kubeconfig kube_config_cluster.yml get pods
+
+- We then need to exec into the Falco pod via:
+
+kubectl --kubeconfig kube_config_cluster.yml exec -it falco-x7gbb /bin/bash
+
+- Now we are in the pod context. The context changed to `root@falco-x7gbb`. Change to the Falco directory
+that contains the Falco configuration files:
+
+cd /etc/falco
+
+ - `cat` the `falco.yaml` file to look at its content and check if the gRPC flags were set correctly:
+
+ cat falco.yaml
+
+ - Both `grpc.enabled` and `grpcOutput.enabled` should be set to true.
+
+ - Take the following steps to deploy the Prometheus Operator. Add the corresponding repo:
+
+ helm repo add stable https://charts.helm.sh/stable
+
+ - Helm install Prometheus Operator:
+
+ helm install --kubeconfig kube_config_cluster.yml stable/prometheus-operator --generate-name
+
+ - Once the installation is complete, we run the following command to check the status of the Prometheus
+ release to make sure the `prometheus-operator` stack can come up.
+
+ kubectl --kubeconfig kube_config_cluster.yml --namespace default get pods -l "release=prometheus-operator-1619828194"
+
+ - Let's also run a `get pods` command to see how many Prometheus=related pods are running.
+
+ kubectl --kubeconfig kube_config_cluster.yml --namespace default get pods | grep prometheus
+
+ - Next, we port forward our primary Prometheus Operator pod to port 9090.
+
+ kubectl --kubeconfig kube_config_cluster.yml --namespace default port-forward prometheus-prometheus-operator-1619828194-prometheus-0 9090
+Forwarding from 127.0.0.1:9090 -> 9090
+Forwarding from [::1]:9090 -> 9090
+Handling connection for 9090
+
+- Visit `127.0.0.1:9090` from the web browser to check port forwarding and make sure that Prometheus
+came up. Under "Targets", you should see Prometheus-related service monitors and they are refreshing.
+These monitor the default Kubernetes services.
+
+- If Prometheus doesn't come up as expected, you need to run this commamd to kill any existing
+port forwarding:
+
+lsof -ti:9090 | xargs kill -9
